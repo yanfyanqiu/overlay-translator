@@ -1,33 +1,16 @@
-// logging.h — minSdk 29 compatible
-#ifndef OFFLINE_INTERPRETER_LOGGING_H
-#define OFFLINE_INTERPRETER_LOGGING_H
-
+#pragma once
 #include <android/log.h>
 
-#ifndef LOG_TAG
-#define LOG_TAG "oi-lib"
-#endif
+#define LOG_TAG "InferenceEngine"
 
-// __android_log_is_loggable is API 30+; guard it
-static inline int oi_should_log(int prio) {
-#if __ANDROID_API__ >= 30
-    return __android_log_is_loggable(prio, LOG_TAG);
-#else
-    (void)prio;
-    return 1;
-#endif
-}
+#define LOGD(...) ((void)__android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, __VA_ARGS__))
+#define LOGI(...) ((void)__android_log_print(ANDROID_LOG_INFO,  LOG_TAG, __VA_ARGS__))
+#define LOGW(...) ((void)__android_log_print(ANDROID_LOG_WARN,  LOG_TAG, __VA_ARGS__))
+#define LOGE(...) ((void)__android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__))
 
-#define OI_LOG(prio, fmt, ...) do { \
-    if (oi_should_log(ANDROID_LOG_##prio)) { \
-        __android_log_print(ANDROID_LOG_##prio, LOG_TAG, fmt, ##__VA_ARGS__); \
-    } \
-} while(0)
-
-#define LOGV(fmt, ...) OI_LOG(VERBOSE, fmt, ##__VA_ARGS__)
-#define LOGD(fmt, ...) OI_LOG(DEBUG,   fmt, ##__VA_ARGS__)
-#define LOGI(fmt, ...) OI_LOG(INFO,    fmt, ##__VA_ARGS__)
-#define LOGW(fmt, ...) OI_LOG(WARN,    fmt, ##__VA_ARGS__)
-#define LOGE(fmt, ...) OI_LOG(ERROR,   fmt, ##__VA_ARGS__)
-
-#endif // OFFLINE_INTERPRETER_LOGGING_H
+// Stub macros for compatibility with old code (no-op on older Android)
+#define LOG_MIN_LEVEL ANDROID_LOG_VERBOSE
+#define LOGi(...) ((void)0)
+#define LOGd(...) ((void)0)
+#define LOGw(...) ((void)0)
+#define LOGe(...) ((void)0)
