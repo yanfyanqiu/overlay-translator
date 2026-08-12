@@ -1,3 +1,4 @@
+.github/workflows/debug-build.yml
 name: Build debug APK
 
 on:
@@ -38,22 +39,20 @@ jobs:
         run: |
           echo "y" | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "cmake;3.22.1"
 
-      - name: Cache Gradle
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper/dists
-          key: gradle-${{ runner.os }}-v1
-
       - name: Build
         env:
           LLAMA_SRC: ${{ github.workspace }}/llama.cpp
           ANDROID_SDK_ROOT: ${{ env.ANDROID_HOME }}
         run: |
           cd "${{ github.workspace }}"
+          # Clean C++ build cache to force rebuild with our fixed files
+          rm -rf lib/.cxx/
+          rm -rf app/build/
           chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon 2>&1 | tail -100 | tee gradle.log
+          # Capture FULL log, tee + redirect both to terminal and file
+          ./gradlew assembleDebug --no-daemon 2>&1 | tee gradle.log ; EXIT_CODE=${PIPESTATUS[0]}
+          echo "GRADLE_EXIT=$EXIT_CODE" >> $GITHUB_ENV
+          exit $EXIT_CODE
 
       - name: Check result
         run: |
@@ -61,11 +60,10 @@ jobs:
             echo "BUILD SUCCESS"
             echo "APK_SIZE=$(stat -c%s app/build/outputs/apk/debug/app-debug.apk)" >> $GITHUB_ENV
           else
-            echo "BUILD FAILED"
-            echo "=== gradle.log tail ==="
-            tail -100 gradle.log
-            echo "=== gradle.log errors ==="
-            grep -i error gradle.log | tail -30 || true
+            echo "BUILD FAILED - gradle.log errors:"
+            grep -i "error:\|BUILD FAILED\|FAILED\|Exception\|exception" gradle.log | tail -50 || true
+            echo "=== Last 30 lines ==="
+            tail -30 gradle.log || true
             exit 1
           fi
 
@@ -74,27 +72,17 @@ jobs:
         run: |
           APK="app/build/outputs/apk/debug/app-debug.apk"
           TAG="v0.1.0"
-
-          # Create release if not exists
-          gh release view "$TAG" &>/dev/null || \
-            gh release create "$TAG" --title "Offline Interpreter v0.1.0" --draft
-
-          # Delete old asset if exists
+          gh release view "$TAG" &>/dev/null ||             gh release create "$TAG" --title "Offline Interpreter v0.1.0" --draft
           gh release delete-asset "$TAG" OfflineInterpreter-debug.apk --yes 2>/dev/null || true
-
-          # Upload new APK
           cp "$APK" OfflineInterpreter-debug.apk
           gh release upload "$TAG" OfflineInterpreter-debug.apk --clobber
-
           echo "APK_UPLOADED=1" >> $GITHUB_ENV
 
       - name: Push build log to branch on failure
         if: failure()
         run: |
           mkdir -p build-log
-          if [ -f gradle.log ]; then
-            tail -300 gradle.log > build-log/build-error.log
-          fi
+          cp gradle.log build-log/build-error.log 2>/dev/null || echo "NO_LOG" > build-log/build-error.log
           echo "${{ github.run_number }}" > build-log/build-number.txt
           echo "${{ github.run_id }}" > build-log/run-id.txt
           git config --local user.email "qclaw@localhost"
