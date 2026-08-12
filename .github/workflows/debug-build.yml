@@ -37,6 +37,8 @@ jobs:
           git checkout 680a9ae63d60d35c21a0dcd7d3fabdb9c6bfc963
 
       - name: Build debug APK
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           chmod +x gradlew
           set +e
@@ -44,8 +46,13 @@ jobs:
           EXIT=$?
           if [ $EXIT -ne 0 ]; then
             echo "GRADLE_EXIT=$EXIT"
-            tail -120 gradle.log > err.txt
-            gh issue create --title "debug-build failure $(date -u +%H:%M)" --body-file err.txt 2>/dev/null || true
+            tail -200 gradle.log > build-error.log
+            git config user.name "build-bot"
+            git config user.email "build-bot@users.noreply.github.com"
+            git checkout -B build-log
+            git add build-error.log
+            git commit -m "build error log $(date -u +%H:%M)" --allow-empty
+            git push origin build-log --force
           fi
           exit $EXIT
 
