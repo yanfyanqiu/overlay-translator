@@ -8,11 +8,11 @@ pluginManagement {
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
-        mavenCentral()
         google()
+        mavenCentral()
     }
 }
 
-rootProject.name = "LocalTranslator"
+rootProject.name = "OfflineInterpreter"
 include(":app")
 include(":lib")

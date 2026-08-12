@@ -1,29 +1,18 @@
-# Add project specific ProGuard rules here.
-# You can control the set of applied configuration files using the
-# proguardFiles setting in build.gradle.
-#
-# For more details, see
-#   http://developer.android.com/guide/developing/tools/proguard.html
+# OfflineInterpreter App ProGuard Rules
 
-# If your project uses WebView with JS, uncomment the following
-# and specify the fully qualified class name to the JavaScript interface
-# class:
-#-keepclassmembers class fqcn.of.javascript.interface.for.webview {
-#   public *;
-#}
+# Keep sherpa-onnx JNI
+-keep class com.k2fsa.sherpa.onnx.** { *; }
 
-# Uncomment this to preserve the line number information for
-# debugging stack traces.
-#-keepattributes SourceFile,LineNumberTable
+# Keep llama.cpp native methods
+-keep class com.offlineinterpreter.app.** { *; }
 
-# If you keep the line number information, uncomment this to
-# hide the original source file name.
-#-renamesourcefileattribute SourceFile
+# Keep lib native methods
+-keep class com.offlineinterpreter.lib.** { *; }
 
--keep class com.arm.aichat.* { *; }
--keep class com.arm.aichat.gguf.* { *; }
+# Coroutines
+-keepnames class kotlinx.coroutines.internal.MainDispatcherFactory {}
+-keepnames class kotlinx.coroutines.CoroutineExceptionHandler {}
 
--assumenosideeffects class android.util.Log {
-    public static int v(...);
-    public static int d(...);
-}
+# AndroidX
+-keep class androidx.** { *; }
+-keep interface androidx.** { *; }

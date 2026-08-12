@@ -1,80 +1,86 @@
+import java.nio.file.Paths
+
 plugins {
-    alias(libs.plugins.android.library)
-    alias(libs.plugins.jetbrains.kotlin.android)
+    id("com.android.library")
+    id("org.jetbrains.kotlin.android")
 }
 
 android {
-    namespace = "com.arm.aichat"
-    compileSdk = 36
-
-    ndkVersion = "29.0.13113456"
+    namespace = "com.offlineinterpreter.lib"
+    compileSdk = 35
 
     defaultConfig {
-        minSdk = 26
-
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        consumerProguardFiles("consumer-rules.pro")
-
+        minSdk = 29
         ndk {
-             abiFilters += listOf("arm64-v8a", "x86_64")
-        }
-        externalNativeBuild {
-            cmake {
-                arguments += "-DCMAKE_BUILD_TYPE=Release"
-                arguments += "-DCMAKE_MESSAGE_LOG_LEVEL=DEBUG"
-                arguments += "-DCMAKE_VERBOSE_MAKEFILE=ON"
-
-                arguments += "-DBUILD_SHARED_LIBS=ON"
-                arguments += "-DLLAMA_BUILD_APP=OFF"
-                arguments += "-DLLAMA_BUILD_COMMON=ON"
-                arguments += "-DLLAMA_OPENSSL=OFF"
-
-                arguments += "-DGGML_NATIVE=OFF"
-                arguments += "-DGGML_BACKEND_DL=ON"
-                arguments += "-DGGML_CPU_ALL_VARIANTS=ON"
-                arguments += "-DGGML_LLAMAFILE=OFF"
-                arguments += "-DCMAKE_BUILD_PARALLEL_LEVEL=2"
-            }
-        }
-        aarMetadata {
-            minCompileSdk = 35
+            abiFilters += listOf("arm64-v8a")
         }
     }
-    externalNativeBuild {
-        cmake {
-            path("src/main/cpp/CMakeLists.txt")
-            version = "3.31.6"
+
+    buildTypes {
+        debug {
+            isMinifyEnabled = false
         }
     }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-    kotlin {
-        jvmToolchain(17)
 
-        compileOptions {
-            targetCompatibility = JavaVersion.VERSION_17
+    kotlinOptions {
+        jvmTarget = "17"
+    }
+
+    externalNativeBuild {
+        cmake {
+            cppFlags += "-std=c++17 -fno-rtti"
+            arguments += listOf(
+                "-DANDROID_STL=c++_shared",
+                "-DGGML_STATIC=OFF",
+                "-DLLAMA_BUILD_LIB=ON",
+                "-DLLAMA_BUILD_EXAMPLES=OFF",
+                "-DLLAMA_BUILD_TESTS=OFF",
+                "-DCMAKE_POSITION_INDEPENDENT_CODE=ON",
+                "-DCMAKE_BUILD_TYPE=Release",
+                "-DLLAMA_ACCELERATE=ON"
+            )
         }
     }
 
     packaging {
-        resources {
-            excludes += "/META-INF/{AL2.0,LGPL2.1}"
-        }
-    }
-
-    publishing {
-        singleVariant("release") {
-            withJavadocJar()
+        jniLibs {
+            useLegacyPackaging = true
         }
     }
 }
 
 dependencies {
-    implementation(libs.androidx.core.ktx)
-    implementation(libs.androidx.datastore.preferences)
+    implementation("com.github.k2-fsa.sherpa-onnx:sherpa-onnx-android:1.3.3")
+    implementation(libs.kotlinx.coroutines.core)
+}
 
-    testImplementation(libs.junit)
-    androidTestImplementation(libs.androidx.junit)
+val localProperties = java.util.Properties()
+val localPropertiesFile = rootProject.file("local.properties")
+if (localPropertiesFile.exists()) {
+    localProperties.load(localPropertiesFile.inputStream())
+}
+
+val sdkDir: String = localProperties.getProperty("sdk.dir") ?: System.getenv("ANDROID_SDK_ROOT") ?: "/usr/local/lib/android/sdk"
+
+val LLAMA_SRC: String = run {
+    val env = System.getenv("LLAMA_SRC")
+    if (env != null) env
+    else {
+        val default = rootProject.projectDir.parentFile.resolve("llama.cpp").absolutePath
+        default
+    }
+}
+
+android.sourceSets["main"] {
+    java.srcDirs("src/main/java")
+    jniLibs.srcDirs("src/main/jniLibs")
+    val cppDir = file("src/main/cpp")
+    val resolvedLlama = file(LLAMA_SRC)
+    // CMake in externalNativeBuild reads CMakeLists.txt which references ${LLAMA_SRC}
+    // We pass it via -DLLAMA_SRC=... in cmake args above
 }

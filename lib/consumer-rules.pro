@@ -1,8 +1,3 @@
--keep class com.arm.aichat.* { *; }
--keep class com.arm.aichat.gguf.* { *; }
-
--keepclasseswithmembernames class * {
-    native <methods>;
-}
-
--keep class kotlin.Metadata { *; }
+# Consumer rules
+-keep class com.offlineinterpreter.lib.** { *; }
+-keep class com.k2fsa.sherpa.onnx.** { *; }
