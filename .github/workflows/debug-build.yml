@@ -30,32 +30,19 @@ jobs:
       - name: Build debug APK
         run: ./gradlew --no-daemon assembleDebug
 
-      - name: Locate APK
-        id: apk
-        run: |
-          APK=$(find app/build/outputs/apk/debug -name '*.apk' | head -n1)
-          echo "apk_path=$APK" >> $GITHUB_OUTPUT
-          echo "size=$(wc -c < $APK)" >> $GITHUB_OUTPUT
-          sha256sum "$APK" | awk '{print $1}' > apk.sha256
-
-      - name: Upload to Release v0.1.0
+      - name: Create Release v0.1.0
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # Delete old asset if exists, then upload new one
-          for asset_id in $(gh release view v0.1.0 --json assets --jq '.assets[].id'); do
-            gh release delete-asset v0.1.0 $asset_id --yes 2>/dev/null || true
-          done
-          # Delete old release if exists
           gh release delete v0.1.0 --yes 2>/dev/null || true
-          # Create new release and upload
-          gh release create v0.1.0 \
-            --title "Screen Translator v0.1.0" \
-            --notes "Debug build from yanfyanqiu/overlay-translator" \
-            app/build/outputs/apk/debug/*.apk apk.sha256
+          gh release create v0.1.0             --title "Screen Translator v0.1.0"             --notes "Debug build from overlay-translator main branch"
+          APK=$(find app/build/outputs/apk/debug -name '*.apk' | head -n1)
+          SHA=$(sha256sum "$APK" | awk '{print $1}')
+          cp "$APK" ScreenTranslator-debug.apk
+          echo "$SHA  ScreenTranslator-debug.apk" > ScreenTranslator-debug.apk.sha256
+          gh release upload v0.1.0 ScreenTranslator-debug.apk ScreenTranslator-debug.apk.sha256 --clobber
 
       - name: Show result
         run: |
-          echo "APK: ${{ steps.apk.outputs.apk_path }}"
-          echo "Size: ${{ steps.apk.outputs.size }} bytes"
+          echo "APK: ScreenTranslator-debug.apk"
           echo "Release: https://github.com/yanfyanqiu/overlay-translator/releases/tag/v0.1.0"
