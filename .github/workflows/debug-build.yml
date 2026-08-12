@@ -50,7 +50,7 @@ jobs:
             git config user.name "build-bot"
             git config user.email "build-bot@users.noreply.github.com"
             git checkout -B build-log
-            git add build-error.log
+            git add -f build-error.log
             git commit -m "build error log $(date -u +%H:%M)" --allow-empty
             git push origin build-log --force
           fi
