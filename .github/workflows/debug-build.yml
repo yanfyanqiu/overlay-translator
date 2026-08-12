@@ -1,0 +1,59 @@
+name: debug-build
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install SDK packages
+        run: |
+          sdkmanager --install "platforms;android-36" "build-tools;36.0.0" "ndk;29.0.13113456" "cmake;3.31.6"
+          yes | sdkmanager --licenses > /dev/null 2>&1 || true
+
+      - name: Clone llama.cpp
+        run: |
+          git clone --depth 1 https://github.com/ggml-org/llama.cpp.git llama.cpp
+          cd llama.cpp
+          git fetch --depth 1 origin 680a9ae63d60d35c21a0dcd7d3fabdb9c6bfc963
+          git checkout 680a9ae63d60d35c21a0dcd7d3fabdb9c6bfc963
+
+      - name: Build debug APK
+        run: |
+          chmod +x gradlew
+          ./gradlew :app:assembleDebug --no-daemon --stacktrace
+
+      - name: Upload APK to Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -e
+          APK=$(find app/build/outputs/apk/debug -name '*.apk' | head -1)
+          echo "APK: $APK"
+          # Remove stale assets so the Release always has exactly one APK
+          gh release delete-asset v0.1.0 LocalTranslator-debug.apk 2>/dev/null || true
+          gh release delete-asset v0.1.0 ScreenTranslator-debug.apk 2>/dev/null || true
+          gh release delete-asset v0.1.0 app-debug.apk 2>/dev/null || true
+          gh release delete-asset v0.1.0 LocalTranslator-debug.apk.sha256 2>/dev/null || true
+          cp "$APK" LocalTranslator-debug.apk
+          sha256sum LocalTranslator-debug.apk > LocalTranslator-debug.apk.sha256
+          gh release upload v0.1.0 LocalTranslator-debug.apk --clobber
+          gh release upload v0.1.0 LocalTranslator-debug.apk.sha256 --clobber

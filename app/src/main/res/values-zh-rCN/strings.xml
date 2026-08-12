@@ -1,0 +1,22 @@
+<resources>
+    <string name="app_name">本地翻译</string>
+    <string name="no_model">尚未导入模型，请先导入本地 GGUF 模型。</string>
+    <string name="model_loading">正在加载模型…</string>
+    <string name="model_ready">模型已就绪：%1$s</string>
+    <string name="model_load_failed">模型加载失败</string>
+    <string name="import_model">导入 GGUF 模型</string>
+    <string name="importing_model">正在导入模型…</string>
+    <string name="import_failed">模型导入失败</string>
+    <string name="input_hint">输入要翻译的文字</string>
+    <string name="translate">翻译</string>
+    <string name="translating">翻译中…</string>
+    <string name="output_label">译文</string>
+    <string name="speak">朗读</string>
+    <string name="auto_speak">自动朗读</string>
+    <string name="swap_languages">交换语言</string>
+    <string name="lang_chinese">中文</string>
+    <string name="lang_english">英文</string>
+    <string name="empty_input">请输入文字</string>
+    <string name="model_not_ready">模型尚未就绪</string>
+    <string name="tts_unavailable">语音合成不可用</string>
+</resources>
